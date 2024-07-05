@@ -54,16 +54,17 @@ set-env:
 	@echo "$(BOLD)Setting environment variables...$(RESET)"
 	if [ -z $(WORKSPACE) ]; then \
 		echo "$(BOLD)$(RED)WORKSPACE was not set$(RESET)"; \
-		ERROR=1; \
-	 fi
-	if [ ! -z $${ERROR} ] && [ $${ERROR} -eq 1 ]; then \
-		echo "$(BOLD)Example usage: \`WORKSPACE=demo make plan\`$(RESET)"; \
-		exit 1; \
-	 fi
+		_ERROR=1; \
+	fi; \
 	if [ ! -f "$(TF_VARS)" ]; then \
 		echo "$(BOLD)$(RED)Could not find variables file: $(TF_VARS)$(RESET)"; \
+		_ERROR=1; \
+	 fi; \
+	if [ ! -z "$${_ERROR}" ] && [ "$${_ERROR}" -eq 1 ]; then \
+		# https://stackoverflow.com/a/3267187
+		echo "$(BOLD)$(RED)Failed to set environment variables$(RESET)"
 		exit 1; \
-	 fi
+	fi
 	echo "$(BOLD)$(GREEN)Done setting environment variables$(RESET)"
 
 init: set-env ## Init a new workspace (environment) if needed, configure the tfstate backend, update any modules, and switch to the workspace
@@ -112,8 +113,19 @@ init: set-env ## Init a new workspace (environment) if needed, configure the tfs
 	echo "$(BOLD)Checking terraform workspace...$(RESET)"
 	_CURRENT_WORKSPACE=$$(terraform workspace show | tr -d '[:space:]'); \
 	if [ ! -z $(WORKSPACE) ] && [ "$(WORKSPACE)" != "$${_CURRENT_WORKSPACE}" ]; then \
+	  echo "$(BOLD)Switching to workspace ($(WORKSPACE))$(RESET)"
 		terraform workspace select $(WORKSPACE) || terraform workspace new $(WORKSPACE); \
 	else
 		echo "$(BOLD)$(CYAN)Using workspace ($${_CURRENT_WORKSPACE})$(RESET)"; \
 	fi
+
+format: ## Rewrites all Terraform configuration files to a canonical format.
+	@terraform fmt \
+		-write=true \
+		-recursive
+
+# https://github.com/terraform-linters/tflint
+# https://github.com/liamg/tfsec
+lint: ## Lint the code and run static analysis to spot potential security issues.
+	@tflint && tfsec .
 
