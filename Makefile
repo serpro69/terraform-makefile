@@ -9,15 +9,14 @@
 .ONESHELL:
 .SHELL := /usr/bin/bash
 .SHELLFLAGS := -ec
-.PHONY: apply destroy-backend destroy destroy-target plan-destroy plan plan-target prep
-VARS="vars/$(WORKSPACE).tfvars"
+.PHONY: apply destroy-backend destroy destroy-target plan-destroy plan plan-target init
 CURRENT_FOLDER=$(shell basename "$$(pwd)")
 WORKSPACE ?= $(shell terraform workspace show)
 GCP_PROJECT ?= $(shell gcloud config get project)
 GCS_BUCKET_PROJECT="wlcm-terraform-pla-23"
-GCS_BUCKET ?= $(shell gcloud storage buckets list --project $(GCS_BUCKET_PROJECT) --format="get(name)")
 GCS_BUCKET_PREFIX="terraform/state"
 FIRESTORE_TABLE="$(WORKSPACE)-wlcmtech-terraform"
+TF_VARS="vars/$(WORKSPACE).tfvars"
 BOLD=$(shell tput bold)
 RED=$(shell tput setaf 1)
 GREEN=$(shell tput setaf 2)
@@ -36,44 +35,58 @@ ifeq (, $(shell which terraform))
 endif
 
 help:
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@echo "This Makefile provides targets that wrap terraform commands while providing sane defaults for terraform environment"
+	echo ""
+	echo "Usage:\n$(BOLD)GCP_PROJECT=demo WORKSPACE=demo make init$(RESET)"
+	echo ""
+	echo "Available commands:"
+	echo ""
+	grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-set-ws:
-	@if [ -z $(WORKSPACE) ]; then \
+set-env:
+	@echo "$(BOLD)Setting environment variables...$(RESET)"
+	if [ -z $(WORKSPACE) ]; then \
 		echo "$(BOLD)$(RED)WORKSPACE was not set$(RESET)"; \
 		ERROR=1; \
 	 fi
-	@if [ ! -z $${ERROR} ] && [ $${ERROR} -eq 1 ]; then \
+	if [ ! -z $${ERROR} ] && [ $${ERROR} -eq 1 ]; then \
 		echo "$(BOLD)Example usage: \`WORKSPACE=demo make plan\`$(RESET)"; \
 		exit 1; \
 	 fi
-	@if [ ! -f "$(VARS)" ]; then \
-		echo "$(BOLD)$(RED)Could not find variables file: $(VARS)$(RESET)"; \
+	if [ ! -f "$(TF_VARS)" ]; then \
+		echo "$(BOLD)$(RED)Could not find variables file: $(TF_VARS)$(RESET)"; \
 		exit 1; \
 	 fi
+	echo "$(BOLD)$(GREEN)Done setting environment variables$(RESET)"
 
-prep: set-ws ## Prepare a new workspace (environment) if needed, configure the tfstate backend, update any modules, and switch to the workspace
+init: set-env ## Init a new workspace (environment) if needed, configure the tfstate backend, update any modules, and switch to the workspace
 	@echo "$(BOLD)Checking GCP project...$(RESET)"
-	CURRENT_PROJECT=$$(gcloud config get project | tr -d '[:space:]'); \
-	if [ ! -z $(GCP_PROJECT) ] && [ "$(GCP_PROJECT)" != "$${CURRENT_PROJECT}" ]; then \
-		read -p "$(BOLD)Current project $${CURRENT_PROJECT}. Do you want to switch project? [y/Y]: $(RESET)" ANSWER; \
+	_CURRENT_PROJECT=$$(gcloud config get project | tr -d '[:space:]'); \
+	if [ ! -z $(GCP_PROJECT) ] && [ "$(GCP_PROJECT)" != "$${_CURRENT_PROJECT}" ]; then \
+		read -p "$(BOLD)Current project $${_CURRENT_PROJECT}. Do you want to switch project? [y/Y]: $(RESET)" ANSWER; \
 		if [ "$${ANSWER}" = "y" ] || [ "$${ANSWER}" = "Y" ]; then \
 			gcloud config set project $(GCP_PROJECT) && \
 			gcloud auth login --update-adc ; \
 	  	echo "$(BOLD)$(GREEN)Project changed to $(GCP_PROJECT)$(RESET)"; \
 		else
-			echo "$(BOLD)Using project ($${CURRENT_PROJECT})$(RESET)"; \
+			echo "$(BOLD)Using project ($${_CURRENT_PROJECT})$(RESET)"; \
 		fi; \
 	else
-		echo "$(BOLD)Project is set to ($${CURRENT_PROJECT})$(RESET)"; \
+		read -p "$(BOLD)Do you want to re-login and update ADC with ($${_CURRENT_PROJECT}) project? [y/Y]: $(RESET)" ANSWER; \
+		if [ "$${ANSWER}" = "y" ] || [ "$${ANSWER}" = "Y" ]; then \
+			gcloud auth login --update-adc ; \
+		fi; \
+		echo "$(BOLD)Project is set to ($${_CURRENT_PROJECT})$(RESET)"; \
 	fi
 
 	echo "$(BOLD)Configuring the terraform backend...$(RESET)"
-	BUCKET_POSTFIX="test"; \
+	_GCS_BUCKET=$$(gcloud storage buckets list --project $(GCS_BUCKET_PROJECT) --format='get(name)' | tr -d '[:space:]'); \
+	_BUCKET_POSTFIX="test"; \
 	if [ ! -z $(WORKSPACE) ] && [ "$(WORKSPACE)" = "prod" ]; then \
-		BUCKET_POSTFIX="prod"; \
+		_BUCKET_POSTFIX="prod"; \
 	fi; \
-	echo "$(BOLD)Using bucket postfix ($${BUCKET_POSTFIX})$(RESET)"; \
+	_BUCKET_PATH="$(GCS_BUCKET_PREFIX)/$${_BUCKET_POSTFIX}"
+	echo "$(BOLD)Using bucket ($${_GCS_BUCKET}) with path ($${_BUCKET_PATH})$(RESET)"; \
 	terraform init \
 		-reconfigure \
 		-input=false \
@@ -81,14 +94,14 @@ prep: set-ws ## Prepare a new workspace (environment) if needed, configure the t
 		-lock=true \
 		-upgrade \
 		-backend=true \
-		-backend-config="bucket=$(GCS_BUCKET)" \
-		-backend-config="prefix=$(GCS_BUCKET_PREFIX)/$${BUCKET_POSTFIX}"
+		-backend-config="bucket=$${_GCS_BUCKET}" \
+		-backend-config="prefix=$${_BUCKET_PATH}"
 
 	echo "$(BOLD)Checking terraform wokrspace...$(RESET)"
-	CURRENT_WORKSPACE=$$(terraform workspace show | tr -d '[:space:]'); \
-	if [ ! -z $(WORKSPACE) ] && [ "$(WORKSPACE)" != "$${CURRENT_WORKSPACE}" ]; then \
+	_CURRENT_WORKSPACE=$$(terraform workspace show | tr -d '[:space:]'); \
+	if [ ! -z $(WORKSPACE) ] && [ "$(WORKSPACE)" != "$${_CURRENT_WORKSPACE}" ]; then \
 		terraform workspace select $(WORKSPACE) || terraform workspace new $(WORKSPACE); \
 	else
-		echo "$(BOLD)Using workspace ($${CURRENT_WORKSPACE})$(RESET)"; \
+		echo "$(BOLD)Using workspace ($${_CURRENT_WORKSPACE})$(RESET)"; \
 	fi
 
