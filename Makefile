@@ -23,9 +23,17 @@ GCS_BUCKET_PREFIX="terraform/state"
 FIRESTORE_TABLE="$(WORKSPACE)-wlcmtech-terraform"
 TF_VARS="vars/$(WORKSPACE).tfvars"
 # Change output
+# https://www.mankier.com/5/terminfo#Description-Highlighting,_Underlining,_and_Visible_Bells
+# https://www.linuxquestions.org/questions/linux-newbie-8/tput-for-bold-dim-italic-underline-blinking-reverse-invisible-4175704737/#post6308097
 RESET=$(shell tput sgr0)
+BLINK=$(shell tput blink)
 BOLD=$(shell tput bold)
-# https://unix.stackexchange.com/a/269085
+DIM=$(shell tput dim)
+SITM=$(shell tput sitm)
+REV=$(shell tput rev)
+SMSO=$(shell tput smso)
+SMUL=$(shell tput smul)
+# https://www.mankier.com/5/terminfo#Description-Color_Handling
 BLACK=$(shell tput setaf 0)
 RED=$(shell tput setaf 1)
 GREEN=$(shell tput setaf 2)
@@ -50,6 +58,8 @@ help:
 	@echo "This Makefile provides targets that wrap terraform commands while providing sane defaults for terraform environment"
 	echo ""
 	echo "Usage:\n$(BOLD)> GCP_PROJECT=demo WORKSPACE=demo make init\n> make plan$(RESET)"
+	echo ""
+	echo "$(DIM)$(SITM)Tip: Add a <space> before the command if it contains sensitive information, to keep it from bash history$(RESET)"
 	echo ""
 	echo "Available commands:"
 	echo ""
