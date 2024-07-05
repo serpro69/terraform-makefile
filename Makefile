@@ -7,9 +7,14 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 .ONESHELL:
-.SHELL := /usr/bin/bash
+.SHELL := /usr/bin/env bash
 .SHELLFLAGS := -ec
-.PHONY: apply destroy-backend destroy destroy-target plan-destroy plan plan-target init
+.PHONY: apply destroy format help init lint plan-destroy plan
+# Use below for reference on how to use variables in a Makefile:
+# - https://www.gnu.org/software/make/manual/html_node/Using-Variables.html
+# - https://www.gnu.org/software/make/manual/html_node/Flavors.html
+# - https://www.gnu.org/software/make/manual/html_node/Setting.html
+# - https://www.gnu.org/software/make/manual/html_node/Shell-Function.html
 CURRENT_FOLDER=$(shell basename "$$(pwd)")
 WORKSPACE ?= $(shell terraform workspace show)
 GCP_PROJECT ?= $(shell gcloud config get project)
