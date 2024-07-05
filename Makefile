@@ -54,7 +54,7 @@ ifeq (, $(shell which terraform))
 	$(error "No terraform in $(PATH), get it from https://www.terraform.io/downloads.html")
 endif
 
-help:
+help: ## Save our souls! 🛟
 	@echo "This Makefile provides targets that wrap terraform commands while providing sane defaults for terraform environment"
 	echo ""
 	echo "Usage:\n$(BOLD)> GCP_PROJECT=demo WORKSPACE=demo make init\n> make plan$(RESET)"
@@ -82,7 +82,7 @@ set-env:
 	fi
 	echo "$(BOLD)$(GREEN)Done setting environment variables$(RESET)"
 
-init: set-env ## (Re-)init terraform, configure the tfstate backend, and switch to the workspace. 🔰
+init: set-env ## Hoist the sails and prepare for the voyage! 🌬️💨
 	@echo "$(BOLD)Checking GCP project...$(RESET)"
 	_CURRENT_PROJECT=$$(gcloud config get project | tr -d '[:space:]'); \
 	if [ ! -z $(GCP_PROJECT) ] && [ "$(GCP_PROJECT)" != "$${_CURRENT_PROJECT}" ]; then \
@@ -135,38 +135,38 @@ init: set-env ## (Re-)init terraform, configure the tfstate backend, and switch 
 	fi
 	echo "$(BOLD)$(CYAN)Done initializing terraform$(RESET)"
 
-format: ## Rewrite all Terraform configuration files to a canonical format. 📜
+format: ## Swab the deck and tidy up! 🧹
 	@terraform fmt \
 		-write=true \
 		-recursive
 
 # https://github.com/terraform-linters/tflint
 # https://github.com/liamg/tfsec
-lint: ## Lint the code and run static analysis to spot potential security issues. 🩻
+lint: ## Inspect the rigging and spot any issues! 🔍
 	@tflint && tfsec .
 
-plan: set-env ## Show what terraform thinks it will do. 👀
+plan: set-env ## Chart the course before you sail! 🗺️
 	@terraform plan \
 		-lock=true \
 		-input=false \
 		-refresh=true \
 		-var-file="$(TF_VARS)"
 
-plan-destroy: set-env ## Show what terraform thinks it will do when burning down the house. 🔥👀
+plan-destroy: set-env ## What would happen if we blow it all to smithereens? 💣
 	@terraform plan \
 		-input=false \
 		-refresh=true \
 		-destroy \
 		-var-file="$(TF_VARS)"
 
-apply: set-env ## Have terraform do its thing. 🪄 This will cost you! 💸
+apply: set-env ## Set course and full speed ahead! ⛵ This will cost you! 💰
 	@terraform apply \
 		-lock=true \
 		-input=false \
 		-refresh=true \
 		-var-file="$(TF_VARS)"
 
-destroy: set-env ## Burn it all down, start anew! 🧨🏚️ This can't be undone! 💥
+destroy: set-env ## Release the Kraken! 🐙 This can't be undone! ☠️
 	@terraform destroy \
 		-lock=true \
 		-input=false \
