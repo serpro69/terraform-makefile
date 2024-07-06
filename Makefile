@@ -18,10 +18,11 @@
 CURRENT_FOLDER=$(shell basename "$$(pwd)")
 WORKSPACE ?= $(shell terraform workspace show)
 GCP_PROJECT ?= $(shell gcloud config get project)
-GCS_BUCKET_PROJECT="wlcm-terraform-pla-23"
-GCS_BUCKET_PREFIX="terraform/state"
-FIRESTORE_TABLE="$(WORKSPACE)-wlcmtech-terraform"
-TF_VARS="vars/$(WORKSPACE).tfvars"
+GCP_BASENAME ?= "wlcm"
+BUCKET_PROJECT="$(BASENAME)-terraform-pla-23"
+BUCKET_DIR="terraform/state"
+FIRESTORE_TABLE="$(BASENAME)-$(WORKSPACE)-terraform"
+TFVARS_PATH="vars/$(WORKSPACE).tfvars"
 # Change output
 # https://www.mankier.com/5/terminfo#Description-Highlighting,_Underlining,_and_Visible_Bells
 # https://www.linuxquestions.org/questions/linux-newbie-8/tput-for-bold-dim-italic-underline-blinking-reverse-invisible-4175704737/#post6308097
@@ -71,13 +72,13 @@ set-env:
 		echo "$(BOLD)$(RED)WORKSPACE was not set$(RESET)"; \
 		_ERROR=1; \
 	fi; \
-	if [ ! -f "$(TF_VARS)" ]; then \
-		echo "$(BOLD)$(RED)Could not find variables file: $(TF_VARS)$(RESET)"; \
+	if [ ! -f "$(TFVARS_PATH)" ]; then \
+		echo "$(BOLD)$(RED)Could not find variables file: $(TFVARS_PATH)$(RESET)"; \
 		_ERROR=1; \
 	 fi; \
 	if [ ! -z "$${_ERROR}" ] && [ "$${_ERROR}" -eq 1 ]; then \
 		# https://stackoverflow.com/a/3267187
-		echo "$(BOLD)$(RED)Failed to set environment variables$(RESET)"
+		echo "$(BOLD)$(RED)Failed to set environment variables\nRun $(DIM)$(BLINK)make help$(RESET) $(BOLD)$(RED)for usage details$(RESET)"
 		exit 1; \
 	fi
 	echo "$(BOLD)$(GREEN)Done setting environment variables$(RESET)"
@@ -104,13 +105,13 @@ init: set-env ## Hoist the sails and prepare for the voyage! 🌬️💨
 	fi
 
 	echo "$(BOLD)Configuring the terraform backend...$(RESET)"
-	_GCS_BUCKET=$$(gcloud storage buckets list --project $(GCS_BUCKET_PROJECT) --format='get(name)' | grep 'tfstate' | head -n1 | tr -d '[:space:]'); \
-	_BUCKET_POSTFIX="test"; \
+	_BUCKET_NAME=$$(gcloud storage buckets list --project $(BUCKET_PROJECT) --format='get(name)' | grep 'tfstate' | head -n1 | tr -d '[:space:]'); \
+	_BUCKET_SUBDIR="test"; \
 	if [ ! -z $(WORKSPACE) ] && [ "$(WORKSPACE)" = "prod" ]; then \
-		_BUCKET_POSTFIX="prod"; \
+		_BUCKET_SUBDIR="prod"; \
 	fi; \
-	_BUCKET_PATH="$(GCS_BUCKET_PREFIX)/$${_BUCKET_POSTFIX}"
-	echo "$(BOLD)Using bucket ($${_GCS_BUCKET}) with path ($${_BUCKET_PATH})$(RESET)"
+	_BUCKET_PATH="$(BUCKET_DIR)/$${_BUCKET_SUBDIR}"
+	echo "$(BOLD)Using bucket ($${_BUCKET_NAME}) with path ($${_BUCKET_PATH})$(RESET)"
 	read -p "$(BOLD)$(MAGENTA)Do you want to proceed? [y/Y]: $(RESET)" ANSWER; \
 	if [ "$${ANSWER}" != "y" ] && [ "$${ANSWER}" != "Y" ]; then \
 		echo "$(BOLD)$(YELLOW)Exiting...$(RESET)"; \
@@ -123,7 +124,7 @@ init: set-env ## Hoist the sails and prepare for the voyage! 🌬️💨
 		-lock=true \
 		-upgrade \
 		-backend=true \
-		-backend-config="bucket=$${_GCS_BUCKET}" \
+		-backend-config="bucket=$${_BUCKET_NAME}" \
 		-backend-config="prefix=$${_BUCKET_PATH}"
 
 	echo "$(BOLD)Checking terraform workspace...$(RESET)"
@@ -152,26 +153,26 @@ plan: set-env ## Chart the course before you sail! 🗺️
 		-lock=true \
 		-input=false \
 		-refresh=true \
-		-var-file="$(TF_VARS)"
+		-var-file="$(TFVARS_PATH)"
 
 plan-destroy: set-env ## What would happen if we blow it all to smithereens? 💣
 	@terraform plan \
 		-input=false \
 		-refresh=true \
 		-destroy \
-		-var-file="$(TF_VARS)"
+		-var-file="$(TFVARS_PATH)"
 
 apply: set-env ## Set course and full speed ahead! ⛵ This will cost you! 💰
 	@terraform apply \
 		-lock=true \
 		-input=false \
 		-refresh=true \
-		-var-file="$(TF_VARS)"
+		-var-file="$(TFVARS_PATH)"
 
 destroy: set-env ## Release the Kraken! 🐙 This can't be undone! ☠️
 	@terraform destroy \
 		-lock=true \
 		-input=false \
 		-refresh=true \
-		-var-file="$(TF_VARS)"
+		-var-file="$(TFVARS_PATH)"
 
