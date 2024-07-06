@@ -16,6 +16,7 @@ This is my [terraform](https://www.terraform.io/) workflow for every terraform p
   - [Considerations](#considerations)
 - [License](#license)
 - [Ack](#ack)
+- [TODO](#todo)
 <!--toc:end-->
 
 ## Usage
@@ -46,3 +47,9 @@ This code is licensed under the [MIT License](LICENSE).
 This makefile was inspired by:
 
 - [pgporada/terraform-makefile](https://github.com/pgporada/terraform-makefile)
+
+## TODO
+
+- [ ] `init`
+  - ask user if they want to re-initialize the config, and only proceed with `init` on positive answer
+  - with this, we can safely call `init` target from other targets, i.e. `plan` or `apply` (currently this would produce too much noise from init on each plan/apply/... command)

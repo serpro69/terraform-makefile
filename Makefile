@@ -59,7 +59,7 @@ help: ## Save our souls! 🛟
 	echo ""
 	echo "Usage:\n$(BOLD)> GCP_PROJECT=demo WORKSPACE=demo make init\n> make plan$(RESET)"
 	echo ""
-	echo "$(DIM)$(SITM)Tip: Add a <space> before the command if it contains sensitive information, to keep it from bash history$(RESET)"
+	echo "$(DIM)$(SITM)Tip: Add a $(BLINK)<space>$(RESET) $(DIM)$(SITM)before the command if it contains sensitive information, to keep it from bash history$(RESET)"
 	echo ""
 	echo "Available commands:"
 	echo ""
@@ -83,7 +83,8 @@ set-env:
 	echo "$(BOLD)$(GREEN)Done setting environment variables$(RESET)"
 
 init: set-env ## Hoist the sails and prepare for the voyage! 🌬️💨
-	@echo "$(BOLD)Checking GCP project...$(RESET)"
+	@echo "$(BOLD)Initializing terraform...$(RESET)"
+	echo "$(BOLD)Checking GCP project...$(RESET)"
 	_CURRENT_PROJECT=$$(gcloud config get project | tr -d '[:space:]'); \
 	if [ ! -z $(GCP_PROJECT) ] && [ "$(GCP_PROJECT)" != "$${_CURRENT_PROJECT}" ]; then \
 		read -p "$(BOLD)$(MAGENTA)Current project $${_CURRENT_PROJECT}. Do you want to switch project? [y/Y]: $(RESET)" ANSWER; \
@@ -133,7 +134,8 @@ init: set-env ## Hoist the sails and prepare for the voyage! 🌬️💨
 	else
 		echo "$(BOLD)$(CYAN)Using workspace ($${_CURRENT_WORKSPACE})$(RESET)"; \
 	fi
-	echo "$(BOLD)$(CYAN)Done initializing terraform$(RESET)"
+	echo "$(BOLD)$(GREEN)Done initializing terraform$(RESET)"
+	echo "$(BOLD)$(CYAN)You can now run other commands, for example:\nrun $(DIM)make plan$(RESET) $(BOLD)$(CYAN)to preview what terraform thinks it will do when applying changes,\nor $(DIM)make help$(RESET) $(BOLD)$(CYAN)to see all available make targets$(RESET)"
 
 format: ## Swab the deck and tidy up! 🧹
 	@terraform fmt \
