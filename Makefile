@@ -19,9 +19,9 @@ CURRENT_FOLDER=$(shell basename "$$(pwd)")
 WORKSPACE ?= $(shell terraform workspace show)
 GCP_PROJECT ?= $(shell gcloud config get project)
 GCP_BASENAME ?= "wlcm"
-BUCKET_PROJECT="$(BASENAME)-terraform-pla-23"
+BUCKET_PROJECT="$(GCP_BASENAME)-terraform-pla-23"
 BUCKET_DIR="terraform/state"
-FIRESTORE_TABLE="$(BASENAME)-$(WORKSPACE)-terraform"
+FIRESTORE_TABLE="$(GCP_BASENAME)-$(WORKSPACE)-terraform"
 TFVARS_PATH="vars/$(WORKSPACE).tfvars"
 # Change output
 # https://www.mankier.com/5/terminfo#Description-Highlighting,_Underlining,_and_Visible_Bells
