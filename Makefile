@@ -20,7 +20,7 @@ MAKE_DIR=$(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 WORKSPACE ?= $(shell terraform workspace show)
 GCP_PROJECT ?= $(shell gcloud config get project)
 GCP_BASENAME ?= "wlcm"
-BUCKET_PROJECT="$(GCP_BASENAME)-terraform-pla-23"
+QUOTA_PROJECT="$(GCP_BASENAME)-terraform-pla-23"
 BUCKET_DIR="terraform/state"
 FIRESTORE_TABLE="$(GCP_BASENAME)-$(WORKSPACE)-terraform"
 TFVARS_PATH="vars/$(WORKSPACE).tfvars"
@@ -104,9 +104,14 @@ init: set-env ## Hoist the sails and prepare for the voyage! 🌬️💨
 		fi; \
 		echo "$(BOLD)$(CYAN)Project is set to ($${_CURRENT_PROJECT})$(RESET)"; \
 	fi
+	read -p "$(BOLD)$(MAGENTA)Do you want to update ADC quota-project to ($(QUOTA_PROJECT))? [y/Y]: $(RESET)" ANSWER && \
+	if [ "$${ANSWER}" = "y" ] || [ "$${ANSWER}" = "Y" ]; then \
+		gcloud auth application-default set-quota-project $(QUOTA_PROJECT) ; \
+		echo "$(BOLD)$(CYAN)Quota-project is set to ($(QUOTA_PROJECT))$(RESET)"; \
+	fi
 
 	echo "$(BOLD)Configuring the terraform backend...$(RESET)"
-	_BUCKET_NAME=$$(gcloud storage buckets list --project $(BUCKET_PROJECT) --format='get(name)' | grep 'tfstate' | head -n1 | tr -d '[:space:]'); \
+	_BUCKET_NAME=$$(gcloud storage buckets list --project $(QUOTA_PROJECT) --format='get(name)' | grep 'tfstate' | head -n1 | tr -d '[:space:]'); \
 	_BUCKET_SUBDIR="test"; \
 	if [ ! -z $(WORKSPACE) ] && [ "$(WORKSPACE)" = "prod" ]; then \
 		_BUCKET_SUBDIR="prod"; \
