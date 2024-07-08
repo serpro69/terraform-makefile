@@ -10,12 +10,13 @@
 .SHELL := /usr/bin/env bash
 .SHELLFLAGS := -ec
 .PHONY: apply destroy format help init lint plan-destroy plan
+# https://stackoverflow.com/a/63771055
+MAKE_DIR=$(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 # Use below for reference on how to use variables in a Makefile:
 # - https://www.gnu.org/software/make/manual/html_node/Using-Variables.html
 # - https://www.gnu.org/software/make/manual/html_node/Flavors.html
 # - https://www.gnu.org/software/make/manual/html_node/Setting.html
 # - https://www.gnu.org/software/make/manual/html_node/Shell-Function.html
-CURRENT_FOLDER=$(shell basename "$$(pwd)")
 WORKSPACE ?= $(shell terraform workspace show)
 GCP_PROJECT ?= $(shell gcloud config get project)
 GCP_BASENAME ?= "wlcm"
@@ -88,7 +89,7 @@ init: set-env ## Hoist the sails and prepare for the voyage! 🌬️💨
 	echo "$(BOLD)Checking GCP project...$(RESET)"
 	_CURRENT_PROJECT=$$(gcloud config get project | tr -d '[:space:]'); \
 	if [ ! -z $(GCP_PROJECT) ] && [ "$(GCP_PROJECT)" != "$${_CURRENT_PROJECT}" ]; then \
-		read -p "$(BOLD)$(MAGENTA)Current project $${_CURRENT_PROJECT}. Do you want to switch project? [y/Y]: $(RESET)" ANSWER; \
+		read -p "$(BOLD)$(MAGENTA)Current project $${_CURRENT_PROJECT}. Do you want to switch project? [y/Y]: $(RESET)" ANSWER && \
 		if [ "$${ANSWER}" = "y" ] || [ "$${ANSWER}" = "Y" ]; then \
 			gcloud config set project $(GCP_PROJECT) && \
 			gcloud auth login --update-adc ; \
@@ -97,7 +98,7 @@ init: set-env ## Hoist the sails and prepare for the voyage! 🌬️💨
 			echo "$(BOLD)$(CYAN)Using project ($${_CURRENT_PROJECT})$(RESET)"; \
 		fi; \
 	else
-		read -p "$(BOLD)$(MAGENTA)Do you want to re-login and update ADC with ($${_CURRENT_PROJECT}) project? [y/Y]: $(RESET)" ANSWER; \
+		read -p "$(BOLD)$(MAGENTA)Do you want to re-login and update ADC with ($${_CURRENT_PROJECT}) project? [y/Y]: $(RESET)" ANSWER && \
 		if [ "$${ANSWER}" = "y" ] || [ "$${ANSWER}" = "Y" ]; then \
 			gcloud auth login --update-adc ; \
 		fi; \
@@ -112,7 +113,7 @@ init: set-env ## Hoist the sails and prepare for the voyage! 🌬️💨
 	fi; \
 	_BUCKET_PATH="$(BUCKET_DIR)/$${_BUCKET_SUBDIR}"
 	echo "$(BOLD)Using bucket ($${_BUCKET_NAME}) with path ($${_BUCKET_PATH})$(RESET)"
-	read -p "$(BOLD)$(MAGENTA)Do you want to proceed? [y/Y]: $(RESET)" ANSWER; \
+	read -p "$(BOLD)$(MAGENTA)Do you want to proceed? [y/Y]: $(RESET)" ANSWER && \
 	if [ "$${ANSWER}" != "y" ] && [ "$${ANSWER}" != "Y" ]; then \
 		echo "$(BOLD)$(YELLOW)Exiting...$(RESET)"; \
 		exit 0; \
@@ -176,3 +177,11 @@ destroy: set-env ## Release the Kraken! 🐙 This can't be undone! ☠️
 		-refresh=true \
 		-var-file="$(TFVARS_PATH)"
 
+clean: set-env ## Nuke local .terraform directory! 💥
+	echo "$(BOLD)Cleaning up...$(RESET)"
+	_DIR="$(CURDIR)/.terraform" ; \
+	read -p "$(BOLD)$(MAGENTA)Do you want to remove ($${_DIR})? [y/Y]: $(RESET)" ANSWER && \
+	if [ "$${ANSWER}" = "y" ] || [ "$${ANSWER}" = "Y" ]; then \
+	  rm -rf "$${_DIR}" ; \
+		echo "$(BOLD)$(CYAN)Removed ($${_DIR})$(RESET)"; \
+	fi
