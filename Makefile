@@ -11,7 +11,7 @@
 .SHELLFLAGS := -ec
 .PHONY: apply destroy format help init lint plan-destroy plan
 # https://stackoverflow.com/a/63771055
-MAKE_DIR=$(dir $(realpath $(lastword $(MAKEFILE_LIST))))
+__MAKE_DIR=$(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 # Use below for reference on how to use variables in a Makefile:
 # - https://www.gnu.org/software/make/manual/html_node/Using-Variables.html
 # - https://www.gnu.org/software/make/manual/html_node/Flavors.html
@@ -19,31 +19,31 @@ MAKE_DIR=$(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 # - https://www.gnu.org/software/make/manual/html_node/Shell-Function.html
 WORKSPACE ?= $(shell terraform workspace show)
 GCP_PROJECT ?= $(shell gcloud config get project)
-GCP_BASENAME ?= "wlcm"
-QUOTA_PROJECT="$(GCP_BASENAME)-terraform-pla-23"
-BUCKET_DIR="terraform/state"
-FIRESTORE_TABLE="$(GCP_BASENAME)-$(WORKSPACE)-terraform"
-TFVARS_PATH="vars/$(WORKSPACE).tfvars"
+GCP_BASENAME=wlcm
+QUOTA_PROJECT=$(GCP_BASENAME)-terraform-pla-23
+__BUCKET_DIR=terraform/state
+__FIRESTORE_TABLE=$(GCP_BASENAME)-$(WORKSPACE)-terraform
+__TFVARS_PATH=vars/$(WORKSPACE).tfvars
 # Change output
 # https://www.mankier.com/5/terminfo#Description-Highlighting,_Underlining,_and_Visible_Bells
 # https://www.linuxquestions.org/questions/linux-newbie-8/tput-for-bold-dim-italic-underline-blinking-reverse-invisible-4175704737/#post6308097
-RESET=$(shell tput sgr0)
-BLINK=$(shell tput blink)
-BOLD=$(shell tput bold)
-DIM=$(shell tput dim)
-SITM=$(shell tput sitm)
-REV=$(shell tput rev)
-SMSO=$(shell tput smso)
-SMUL=$(shell tput smul)
+__RESET=$(shell tput sgr0)
+__BLINK=$(shell tput blink)
+__BOLD=$(shell tput bold)
+__DIM=$(shell tput dim)
+__SITM=$(shell tput sitm)
+__REV=$(shell tput rev)
+_SMSO=$(shell tput smso)
+__SMUL=$(shell tput smul)
 # https://www.mankier.com/5/terminfo#Description-Color_Handling
-BLACK=$(shell tput setaf 0)
-RED=$(shell tput setaf 1)
-GREEN=$(shell tput setaf 2)
-YELLOW=$(shell tput setaf 3)
-BLUE=$(shell tput setaf 4)
-MAGENTA=$(shell tput setaf 5)
-CYAN=$(shell tput setaf 6)
-WHITE=$(shell tput setaf 7)
+__BLACK=$(shell tput setaf 0)
+__RED=$(shell tput setaf 1)
+__GREEN=$(shell tput setaf 2)
+__YELLOW=$(shell tput setaf 3)
+__BLUE=$(shell tput setaf 4)
+__MAGENTA=$(shell tput setaf 5)
+__CYAN=$(shell tput setaf 6)
+__WHITE=$(shell tput setaf 7)
 
 # Check for necessary tools
 ifeq (, $(shell which gcloud))
@@ -57,70 +57,77 @@ ifeq (, $(shell which terraform))
 endif
 
 help: ## Save our souls! 🛟
-	@echo "This Makefile provides targets that wrap terraform commands while providing sane defaults for terraform environment"
+	@echo "This Makefile provides opinionated targets that wrap terraform commands with sane defaults,\ninitialization shortcuts for terraform environment, and a GCS terraform backend."
 	echo ""
-	echo "Usage:\n$(BOLD)> GCP_PROJECT=demo WORKSPACE=demo make init\n> make plan$(RESET)"
+	echo "Usage:\n$(__BOLD)> GCP_PROJECT=demo WORKSPACE=demo make init\n> make plan$(__RESET)"
 	echo ""
-	echo "$(DIM)$(SITM)Tip: Add a $(BLINK)<space>$(RESET) $(DIM)$(SITM)before the command if it contains sensitive information, to keep it from bash history$(RESET)"
+	echo "$(__DIM)$(__SITM)Tip: Add a $(__BLINK)<space>$(__RESET) $(__DIM)$(__SITM)before the command if it contains sensitive information, to keep it from bash history!$(__RESET)"
 	echo ""
 	echo "Available commands:"
 	echo ""
 	grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	echo ""
+	echo "Available input variables:"
+	echo ""
+	echo "<WORKSPACE>                    $(__MAGENTA)󱁢$(__RESET) terraform workspace to switch to"
+	echo "<GCP_PROJECT>                  $(__BLUE)󱇶$(__RESET) google cloud platform project name"
+	echo "<GCP_BASENAME>                 $(__GREEN)󰾺$(__RESET) basename to use in other variables, e.g. short company name"
+	echo "<QUOTA_PROJECT>                $(__CYAN)$(__RESET) google cloud platform quota project name"
 
 set-env:
-	@echo "$(BOLD)Setting environment variables...$(RESET)"
+	@echo "$(__BOLD)Setting environment variables...$(__RESET)"
 	if [ -z $(WORKSPACE) ]; then \
-		echo "$(BOLD)$(RED)WORKSPACE was not set$(RESET)"; \
+		echo "$(__BOLD)$(__RED)WORKSPACE was not set$(__RESET)"; \
 		_ERROR=1; \
 	fi; \
-	if [ ! -f "$(TFVARS_PATH)" ]; then \
-		echo "$(BOLD)$(RED)Could not find variables file: $(TFVARS_PATH)$(RESET)"; \
+	if [ ! -f "$(__TFVARS_PATH)" ]; then \
+		echo "$(__BOLD)$(__RED)Could not find variables file: $(__TFVARS_PATH)$(__RESET)"; \
 		_ERROR=1; \
 	 fi; \
 	if [ ! -z "$${_ERROR}" ] && [ "$${_ERROR}" -eq 1 ]; then \
 		# https://stackoverflow.com/a/3267187
-		echo "$(BOLD)$(RED)Failed to set environment variables\nRun $(DIM)$(BLINK)make help$(RESET) $(BOLD)$(RED)for usage details$(RESET)"
+		echo "$(__BOLD)$(__RED)Failed to set environment variables\nRun $(__DIM)$(__BLINK)make help$(__RESET) $(__BOLD)$(__RED)for usage details$(__RESET)"
 		exit 1; \
 	fi
-	echo "$(BOLD)$(GREEN)Done setting environment variables$(RESET)"
+	echo "$(__BOLD)$(__GREEN)Done setting environment variables$(__RESET)"
 
 init: set-env ## Hoist the sails and prepare for the voyage! 🌬️💨
-	@echo "$(BOLD)Initializing terraform...$(RESET)"
-	echo "$(BOLD)Checking GCP project...$(RESET)"
+	@echo "$(__BOLD)Initializing terraform...$(__RESET)"
+	echo "$(__BOLD)Checking GCP project...$(__RESET)"
 	_CURRENT_PROJECT=$$(gcloud config get project | tr -d '[:space:]'); \
 	if [ ! -z $(GCP_PROJECT) ] && [ "$(GCP_PROJECT)" != "$${_CURRENT_PROJECT}" ]; then \
-		read -p "$(BOLD)$(MAGENTA)Current project $${_CURRENT_PROJECT}. Do you want to switch project? [y/Y]: $(RESET)" ANSWER && \
+		read -p "$(__BOLD)$(__MAGENTA)Current project $${_CURRENT_PROJECT}. Do you want to switch project? [y/Y]: $(__RESET)" ANSWER && \
 		if [ "$${ANSWER}" = "y" ] || [ "$${ANSWER}" = "Y" ]; then \
 			gcloud config set project $(GCP_PROJECT) && \
 			gcloud auth login --update-adc ; \
-	  	echo "$(BOLD)$(GREEN)Project changed to $(GCP_PROJECT)$(RESET)"; \
+	  	echo "$(__BOLD)$(__GREEN)Project changed to $(GCP_PROJECT)$(__RESET)"; \
 		else
-			echo "$(BOLD)$(CYAN)Using project ($${_CURRENT_PROJECT})$(RESET)"; \
+			echo "$(__BOLD)$(__CYAN)Using project ($${_CURRENT_PROJECT})$(__RESET)"; \
 		fi; \
 	else
-		read -p "$(BOLD)$(MAGENTA)Do you want to re-login and update ADC with ($${_CURRENT_PROJECT}) project? [y/Y]: $(RESET)" ANSWER && \
+		read -p "$(__BOLD)$(__MAGENTA)Do you want to re-login and update ADC with ($${_CURRENT_PROJECT}) project? [y/Y]: $(__RESET)" ANSWER && \
 		if [ "$${ANSWER}" = "y" ] || [ "$${ANSWER}" = "Y" ]; then \
 			gcloud auth login --update-adc ; \
 		fi; \
-		echo "$(BOLD)$(CYAN)Project is set to ($${_CURRENT_PROJECT})$(RESET)"; \
+		echo "$(__BOLD)$(__CYAN)Project is set to ($${_CURRENT_PROJECT})$(__RESET)"; \
 	fi
-	read -p "$(BOLD)$(MAGENTA)Do you want to update ADC quota-project to ($(QUOTA_PROJECT))? [y/Y]: $(RESET)" ANSWER && \
+	read -p "$(__BOLD)$(__MAGENTA)Do you want to update ADC quota-project to ($(QUOTA_PROJECT))? [y/Y]: $(__RESET)" ANSWER && \
 	if [ "$${ANSWER}" = "y" ] || [ "$${ANSWER}" = "Y" ]; then \
 		gcloud auth application-default set-quota-project $(QUOTA_PROJECT) ; \
-		echo "$(BOLD)$(CYAN)Quota-project is set to ($(QUOTA_PROJECT))$(RESET)"; \
+		echo "$(__BOLD)$(__CYAN)Quota-project is set to ($(QUOTA_PROJECT))$(__RESET)"; \
 	fi
 
-	echo "$(BOLD)Configuring the terraform backend...$(RESET)"
+	echo "$(__BOLD)Configuring the terraform backend...$(__RESET)"
 	_BUCKET_NAME=$$(gcloud storage buckets list --project $(QUOTA_PROJECT) --format='get(name)' | grep 'tfstate' | head -n1 | tr -d '[:space:]'); \
 	_BUCKET_SUBDIR="test"; \
 	if [ ! -z $(WORKSPACE) ] && [ "$(WORKSPACE)" = "prod" ]; then \
 		_BUCKET_SUBDIR="prod"; \
 	fi; \
-	_BUCKET_PATH="$(BUCKET_DIR)/$${_BUCKET_SUBDIR}"
-	echo "$(BOLD)Using bucket ($${_BUCKET_NAME}) with path ($${_BUCKET_PATH})$(RESET)"
-	read -p "$(BOLD)$(MAGENTA)Do you want to proceed? [y/Y]: $(RESET)" ANSWER && \
+	_BUCKET_PATH="$(__BUCKET_DIR)/$${_BUCKET_SUBDIR}"
+	echo "$(__BOLD)Using bucket ($${_BUCKET_NAME}) with path ($${_BUCKET_PATH})$(__RESET)"
+	read -p "$(__BOLD)$(__MAGENTA)Do you want to proceed? [y/Y]: $(__RESET)" ANSWER && \
 	if [ "$${ANSWER}" != "y" ] && [ "$${ANSWER}" != "Y" ]; then \
-		echo "$(BOLD)$(YELLOW)Exiting...$(RESET)"; \
+		echo "$(__BOLD)$(__YELLOW)Exiting...$(__RESET)"; \
 		exit 0; \
 	fi
 	terraform init \
@@ -133,16 +140,16 @@ init: set-env ## Hoist the sails and prepare for the voyage! 🌬️💨
 		-backend-config="bucket=$${_BUCKET_NAME}" \
 		-backend-config="prefix=$${_BUCKET_PATH}"
 
-	echo "$(BOLD)Checking terraform workspace...$(RESET)"
+	echo "$(__BOLD)Checking terraform workspace...$(__RESET)"
 	_CURRENT_WORKSPACE=$$(terraform workspace show | tr -d '[:space:]'); \
 	if [ ! -z $(WORKSPACE) ] && [ "$(WORKSPACE)" != "$${_CURRENT_WORKSPACE}" ]; then \
-	  echo "$(BOLD)Switching to workspace ($(WORKSPACE))$(RESET)"
+	  echo "$(__BOLD)Switching to workspace ($(WORKSPACE))$(__RESET)"
 		terraform workspace select $(WORKSPACE) || terraform workspace new $(WORKSPACE); \
 	else
-		echo "$(BOLD)$(CYAN)Using workspace ($${_CURRENT_WORKSPACE})$(RESET)"; \
+		echo "$(__BOLD)$(__CYAN)Using workspace ($${_CURRENT_WORKSPACE})$(__RESET)"; \
 	fi
-	echo "$(BOLD)$(GREEN)Done initializing terraform$(RESET)"
-	echo "$(BOLD)$(CYAN)You can now run other commands, for example:\nrun $(DIM)make plan$(RESET) $(BOLD)$(CYAN)to preview what terraform thinks it will do when applying changes,\nor $(DIM)make help$(RESET) $(BOLD)$(CYAN)to see all available make targets$(RESET)"
+	echo "$(__BOLD)$(__GREEN)Done initializing terraform$(__RESET)"
+	echo "$(__BOLD)$(__CYAN)You can now run other commands, for example:\nrun $(__DIM)$(__BLINK)make plan$(__RESET) $(__BOLD)$(__CYAN)to preview what terraform thinks it will do when applying changes,\nor $(__DIM)$(__BLINK)make help$(__RESET) $(__BOLD)$(__CYAN)to see all available make targets$(__RESET)"
 
 format: ## Swab the deck and tidy up! 🧹
 	@terraform fmt \
@@ -159,34 +166,34 @@ plan: set-env ## Chart the course before you sail! 🗺️
 		-lock=true \
 		-input=false \
 		-refresh=true \
-		-var-file="$(TFVARS_PATH)"
+		-var-file="$(__TFVARS_PATH)"
 
 plan-destroy: set-env ## What would happen if we blow it all to smithereens? 💣
 	@terraform plan \
 		-input=false \
 		-refresh=true \
 		-destroy \
-		-var-file="$(TFVARS_PATH)"
+		-var-file="$(__TFVARS_PATH)"
 
 apply: set-env ## Set course and full speed ahead! ⛵ This will cost you! 💰
 	@terraform apply \
 		-lock=true \
 		-input=false \
 		-refresh=true \
-		-var-file="$(TFVARS_PATH)"
+		-var-file="$(__TFVARS_PATH)"
 
 destroy: set-env ## Release the Kraken! 🐙 This can't be undone! ☠️
 	@terraform destroy \
 		-lock=true \
 		-input=false \
 		-refresh=true \
-		-var-file="$(TFVARS_PATH)"
+		-var-file="$(__TFVARS_PATH)"
 
 clean: set-env ## Nuke local .terraform directory! 💥
-	echo "$(BOLD)Cleaning up...$(RESET)"
+	echo "$(__BOLD)Cleaning up...$(__RESET)"
 	_DIR="$(CURDIR)/.terraform" ; \
-	read -p "$(BOLD)$(MAGENTA)Do you want to remove ($${_DIR})? [y/Y]: $(RESET)" ANSWER && \
+	read -p "$(__BOLD)$(__MAGENTA)Do you want to remove ($${_DIR})? [y/Y]: $(__RESET)" ANSWER && \
 	if [ "$${ANSWER}" = "y" ] || [ "$${ANSWER}" = "Y" ]; then \
 	  rm -rf "$${_DIR}" ; \
-		echo "$(BOLD)$(CYAN)Removed ($${_DIR})$(RESET)"; \
+		echo "$(__BOLD)$(__CYAN)Removed ($${_DIR})$(__RESET)"; \
 	fi
