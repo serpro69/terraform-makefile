@@ -1,3 +1,0 @@
-[submodule "pgporada_terraform-makefile"]
-	path = pgporada_terraform-makefile
-	url = git@github.com:serpro69/pgporada_terraform-makefile.git
