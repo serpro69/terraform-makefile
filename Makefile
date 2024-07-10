@@ -63,22 +63,33 @@ ifeq (, $(shell which trivy))
 endif
 
 help: ## Save our souls! 🛟
-	@echo "This Makefile provides opinionated targets that wrap terraform commands with sane defaults,\ninitialization shortcuts for terraform environment, and a GCS terraform backend."
+	@echo "This Makefile provides opinionated targets that wrap terraform commands with sane defaults,\ninitialization shortcuts for terraform environment,\nand a remote terraform backend via Google Cloud Storage."
 	echo ""
 	echo "Usage:\n$(__BOLD)> GCP_PROJECT=demo WORKSPACE=demo make init\n> make plan$(__RESET)"
 	echo ""
-	echo "$(__DIM)$(__SITM)Tip: Add a $(__BLINK)<space>$(__RESET) $(__DIM)$(__SITM)before the command if it contains sensitive information, to keep it from bash history!$(__RESET)"
+	echo "$(__DIM)$(__SITM)Tip: Add a $(__BLINK)<space>$(__RESET) $(__DIM)$(__SITM)before the command if it contains sensitive information,\nto keep it from bash history!$(__RESET)"
 	echo ""
-	echo "Available commands:"
+	echo "Available commands ⌨️ "
 	echo ""
 	grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 	echo ""
-	echo "Available input variables:"
+	echo "Available input variables 🧮"
 	echo ""
 	echo "<WORKSPACE>                    $(__MAGENTA)󱁢$(__RESET) terraform workspace to switch to"
 	echo "<GCP_PROJECT>                  $(__BLUE)󱇶$(__RESET) google cloud platform project name"
 	echo "<GCP_BASENAME>                 $(__GREEN)󰾺$(__RESET) basename to use in other variables, e.g. short company name"
 	echo "<QUOTA_PROJECT>                $(__CYAN)$(__RESET) google cloud platform quota project name"
+	echo ""
+	echo "---"
+	echo ""
+	echo "Dependencies 📦"
+	echo ""
+	echo "- gcloud                       https://cloud.google.com/sdk/docs/install"
+	echo "- jq                           https://github.com/jqlang/jq?tab=readme-ov-file#installation"
+	echo "- terraform                    https://www.terraform.io/downloads.html"
+	echo "- tflint                       https://github.com/terraform-linters/tflint?tab=readme-ov-file#installation"
+	echo "- trivy                        https://github.com/aquasecurity/trivy?tab=readme-ov-file#get-trivy"
+	echo ""
 
 set-env:
 	@echo "$(__BOLD)Setting environment variables...$(__RESET)"
