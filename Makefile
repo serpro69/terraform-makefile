@@ -55,6 +55,12 @@ endif
 ifeq (, $(shell which terraform))
 	$(error "No terraform in $(PATH), get it from https://www.terraform.io/downloads.html")
 endif
+ifeq (, $(shell which tflint))
+	$(info "No tflint in $(PATH), get it from https://github.com/terraform-linters/tflint?tab=readme-ov-file#installation")
+endif
+ifeq (, $(shell which trivy))
+	$(info "No trivy in $(PATH), get it from https://github.com/aquasecurity/trivy?tab=readme-ov-file#get-trivy")
+endif
 
 help: ## Save our souls! 🛟
 	@echo "This Makefile provides opinionated targets that wrap terraform commands with sane defaults,\ninitialization shortcuts for terraform environment, and a GCS terraform backend."
@@ -157,9 +163,14 @@ format: ## Swab the deck and tidy up! 🧹
 		-recursive
 
 # https://github.com/terraform-linters/tflint
-# https://github.com/liamg/tfsec
-lint: ## Inspect the rigging and spot any issues! 🔍
-	@tflint && tfsec .
+# https://aquasecurity.github.io/trivy
+validate: ## Inspect the rigging and report any issues! 🔍
+	@terraform validate && \
+		tflint --var-file "$(__TFVARS_PATH)" && \
+		# https://aquasecurity.github.io/trivy/v0.53/docs/coverage/iac/terraform/
+		# TIP: suppress issues via inline comments:
+		# https://aquasecurity.github.io/trivy/v0.46/docs/configuration/filtering/#by-inline-comments
+		trivy conf --tf-vars "$(__TFVARS_PATH)" .
 
 plan: set-env ## Chart the course before you sail! 🗺️
 	@terraform plan \
@@ -175,14 +186,14 @@ plan-destroy: set-env ## What would happen if we blow it all to smithereens? �
 		-destroy \
 		-var-file="$(__TFVARS_PATH)"
 
-apply: set-env ## Set course and full speed ahead! ⛵ This will cost you! 💰
+apply: set-env validate ## Set course and full speed ahead! ⛵ This will cost you! 💰
 	@terraform apply \
 		-lock=true \
 		-input=false \
 		-refresh=true \
 		-var-file="$(__TFVARS_PATH)"
 
-destroy: set-env ## Release the Kraken! 🐙 This can't be undone! ☠️
+destroy: set-env validate ## Release the Kraken! 🐙 This can't be undone! ☠️
 	@terraform destroy \
 		-lock=true \
 		-input=false \
