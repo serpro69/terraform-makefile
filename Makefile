@@ -130,10 +130,14 @@ init: set-env ## Hoist the sails and prepare for the voyage! 🌬️💨
 		fi; \
 		echo "$(__BOLD)$(__CYAN)Project is set to ($${_CURRENT_PROJECT})$(__RESET)"; \
 	fi
-	read -p "$(__BOLD)$(__MAGENTA)Do you want to update ADC quota-project to ($(QUOTA_PROJECT))? [y/Y]: $(__RESET)" ANSWER && \
-	if [ "$${ANSWER}" = "y" ] || [ "$${ANSWER}" = "Y" ]; then \
-		gcloud auth application-default set-quota-project $(QUOTA_PROJECT) ; \
-		echo "$(__BOLD)$(__CYAN)Quota-project is set to ($(QUOTA_PROJECT))$(__RESET)"; \
+
+	_CURRENT_QUOTA_PROJECT=$$(cat ~/.config/gcloud/application_default_credentials.json | jq '.quota_project_id' | tr -d '"'); \
+	if [ "$(QUOTA_PROJECT)" != "$${_CURRENT_QUOTA_PROJECT}" ]; then \
+		read -p "$(__BOLD)$(__MAGENTA)Do you want to update ADC quota-project from ($${_CURRENT_QUOTA_PROJECT}) to ($(QUOTA_PROJECT))? [y/Y]: $(__RESET)" ANSWER && \
+		if [ "$${ANSWER}" = "y" ] || [ "$${ANSWER}" = "Y" ]; then \
+			gcloud auth application-default set-quota-project $(QUOTA_PROJECT) ; \
+			echo "$(__BOLD)$(__CYAN)Quota-project is set to ($(QUOTA_PROJECT))$(__RESET)"; \
+		fi; \
 	fi
 
 	echo "$(__BOLD)Configuring the terraform backend...$(__RESET)"
