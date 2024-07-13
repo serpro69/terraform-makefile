@@ -19,10 +19,10 @@ __MAKE_DIR=$(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 # - https://www.gnu.org/software/make/manual/html_node/Shell-Function.html
 WORKSPACE ?= $(shell terraform workspace show)
 GCP_PROJECT ?= $(shell gcloud config get project)
-GCP_BASENAME=wlcm
-QUOTA_PROJECT=$(GCP_BASENAME)-terraform-pla-23
+GCP_PREFIX=wlcm
+QUOTA_PROJECT=$(GCP_PREFIX)-terraform-pla-23
 __BUCKET_DIR=terraform/state
-__FIRESTORE_TABLE=$(GCP_BASENAME)-$(WORKSPACE)-terraform
+__FIRESTORE_TABLE=$(GCP_PREFIX)-$(WORKSPACE)-terraform
 __TFVARS_PATH=vars/$(WORKSPACE).tfvars
 # Change output
 # https://www.mankier.com/5/terminfo#Description-Highlighting,_Underlining,_and_Visible_Bells
@@ -90,7 +90,7 @@ help: ## Save our souls! 🛟
 	echo "$(__MAGENTA)<WORKSPACE>                    $(__MAGENTA)󱁢$(__RESET) Terraform workspace to (potentially create and) switch to"
 	echo "$(__MAGENTA)<GCP_PROJECT>                  $(__BLUE)󱇶$(__RESET) GCP project name $(__SITM)(usually, but not always, the project$(__RESET)"
 	echo "                               $(__SITM)that terraform changes are being applied to)$(__RESET)"
-	echo "$(__MAGENTA)<GCP_BASENAME>                 $(__GREEN)󰾺$(__RESET) Basename to use in other variables"
+	echo "$(__MAGENTA)<GCP_PREFIX>                   $(__GREEN)󰾺$(__RESET) Prefix to use in some other GCP-related variables"
 	echo "                               $(__SITM)(e.g., short company name)$(__RESET)"
 	echo "$(__MAGENTA)<QUOTA_PROJECT>                $(__CYAN)$(__RESET) GCP quota project name"
 	echo "                               $(__SITM)(NB! we assume quota project contains the .tfstate bucket)$(__RESET)"
