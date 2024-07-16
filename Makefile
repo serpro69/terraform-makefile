@@ -181,7 +181,7 @@ init: set-env ## Hoist the sails and prepare for the voyage! 🌬️💨
 	_CURRENT_WORKSPACE=$$(terraform workspace show | tr -d '[:space:]'); \
 	if [ ! -z $(WORKSPACE) ] && [ "$(WORKSPACE)" != "$${_CURRENT_WORKSPACE}" ]; then \
 	  echo "$(__BOLD)Switching to workspace ($(WORKSPACE))$(__RESET)"
-		terraform workspace select $(WORKSPACE) || terraform workspace new $(WORKSPACE); \
+		terraform workspace select -or-create $(WORKSPACE); \
 	else
 		echo "$(__BOLD)$(__CYAN)Using workspace ($${_CURRENT_WORKSPACE})$(__RESET)"; \
 	fi
