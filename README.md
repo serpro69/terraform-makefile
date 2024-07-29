@@ -43,17 +43,23 @@ You can, of course, just download the [raw version of Makefile](https://raw.gith
 View a description of Makefile targets with `help` via the [self-documenting makefile](https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html).
 
 ```text
-➜ make
-This Makefile provides opinionated targets that wrap terraform commands with sane defaults,
-initialization shortcuts for terraform environment, and a GCS terraform backend.
+➜ make help
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+This Makefile contains opinionated targets that wrap terraform commands,
+providing sane defaults, initialization shortcuts for terraform environment,
+and support for remote terraform backends via Google Cloud Storage.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Usage:
 > GCP_PROJECT=demo WORKSPACE=demo make init
 > make plan
 
-Tip: Add a <space> before the command if it contains sensitive information, to keep it from bash history!
+Tip: Add a <space> before the command if it contains sensitive information,
+to keep it from bash history!
 
-Available commands:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Available commands ⌨️
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 apply                          Set course and full speed ahead! ⛵ This will cost you! 💰
 clean                          Nuke local .terraform directory! 💥
@@ -61,16 +67,32 @@ destroy                        Release the Kraken! 🐙 This can't be undone! �
 format                         Swab the deck and tidy up! 🧹
 help                           Save our souls! 🛟
 init                           Hoist the sails and prepare for the voyage! 🌬️💨
-lint                           Inspect the rigging and spot any issues! 🔍
 plan-destroy                   What would happen if we blow it all to smithereens? 💣
 plan                           Chart the course before you sail! 🗺️
+validate                       Inspect the rigging and report any issues! 🔍
 
-Available input variables:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Input variables 🧮
+(Note: these are only used with 'init' target!)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-<WORKSPACE>                    󱁢 terraform workspace to switch to
-<GCP_PROJECT>                  󱇶 google cloud platform project name
-<GCP_BASENAME>                 󰾺 basename to use in other variables, e.g. short company name
-<QUOTA_PROJECT>                 google cloud platform quota project name
+<WORKSPACE>                    󱁢 Terraform workspace to (potentially create and) switch to
+<GCP_PROJECT>                  󱇶 GCP project name (usually, but not always, the project
+                               that terraform changes are being applied to)
+<GCP_PREFIX>                   󰾺 Prefix to use in some other GCP-related variables
+                               (e.g., short company name)
+<QUOTA_PROJECT>                 GCP quota project name
+                               (NB! we assume quota project contains the .tfstate bucket)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Dependencies 📦
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- gcloud                       https://cloud.google.com/sdk/docs/install
+- jq                           https://github.com/jqlang/jq?tab=readme-ov-file#installation
+- terraform                    https://www.terraform.io/downloads.html
+- tflint                       https://github.com/terraform-linters/tflint?tab=readme-ov-file#installation
+- trivy                        https://github.com/aquasecurity/trivy?tab=readme-ov-file#get-trivy
 ```
 
 > [!NOTE]
