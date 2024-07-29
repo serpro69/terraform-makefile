@@ -12,6 +12,7 @@ This is my [terraform](https://www.terraform.io/) workflow for every terraform p
 <!--toc:start-->
 - [About](#about)
 - [TOC](#toc)
+- [Installation](#installation)
 - [Usage](#usage)
   - [Considerations](#considerations)
 - [License](#license)
@@ -19,6 +20,23 @@ This is my [terraform](https://www.terraform.io/) workflow for every terraform p
 - [Ack](#ack)
 - [TODO](#todo)
 <!--toc:end-->
+
+## Installation
+
+I usually add this project as a [git submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules) to the terraform [root module](https://developer.hashicorp.com/terraform/language/modules#the-root-module) directory, and then create a symlink to the makefile, for example:
+
+```bash
+# add submodule 
+git submodule add https://github.com/serpro69/terraform-makefile.git
+# create a symlink
+ln -s terraform-makefile/Makefile Makefile
+# test it out
+make help
+```
+
+Using a git submodule makes it easier to pull latest changes and fixes, if you're interested in those.
+
+You can, of course, just download the [raw version of Makefile](https://raw.githubusercontent.com/serpro69/terraform-makefile/master/Makefile) and add it directly to your project.
 
 ## Usage
 
