@@ -22,6 +22,8 @@ GCP_PROJECT ?= $(shell gcloud config get project)
 GCP_PREFIX=wlcm
 QUOTA_PROJECT=$(GCP_PREFIX)-terraform-pla-23
 __BUCKET_DIR=terraform/state
+__PROD_BUCKET_SUBDIR=prod
+__TEST_BUCKET_SUBDIR=test
 __FIRESTORE_TABLE=$(GCP_PREFIX)-$(WORKSPACE)-terraform
 __TFVARS_PATH=vars/$(WORKSPACE).tfvars
 # Change output
@@ -154,11 +156,13 @@ init: set-env ## Hoist the sails and prepare for the voyage! 🌬️💨
 		fi; \
 	fi
 
+	# Configure GCS backend
 	echo "$(__BOLD)Configuring the terraform backend...$(__RESET)"
 	_BUCKET_NAME=$$(gcloud storage buckets list --project $(QUOTA_PROJECT) --format='get(name)' | grep 'tfstate' | head -n1 | tr -d '[:space:]'); \
-	_BUCKET_SUBDIR="test"; \
-	if [ ! -z $(WORKSPACE) ] && [ "$(WORKSPACE)" = "prod" ]; then \
-		_BUCKET_SUBDIR="prod"; \
+	_BUCKET_SUBDIR=$(__TEST_BUCKET_SUBDIR); \
+	read -p "$(__BOLD)$(__MAGENTA)Use $(__BLINK)$(__YELLOW)production$(__RESET) $(__BOLD)$(__MAGENTA)state bucket subdir? [y/Y]: $(__RESET)" ANSWER && \
+	if [ "$${ANSWER}" = "y" ] || [ "$${ANSWER}" = "Y" ]; then \
+		_BUCKET_SUBDIR=$(__PROD_BUCKET_SUBDIR); \
 	fi; \
 	_BUCKET_PATH="$(__BUCKET_DIR)/$${_BUCKET_SUBDIR}"
 	echo "$(__BOLD)Using bucket ($${_BUCKET_NAME}) with path ($${_BUCKET_PATH})$(__RESET)"
