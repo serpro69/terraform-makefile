@@ -171,6 +171,15 @@ init: set-env ## Hoist the sails and prepare for the voyage! 🌬️💨
 		echo "$(__BOLD)$(__YELLOW)Exiting...$(__RESET)"; \
 		exit 0; \
 	fi
+
+	# Need to switch to default workspace, since the target WORKSPACE might not exist in the selected bucket
+	# (when changing between prod and non-prod state bucket sub-dirs)
+	_CURRENT_WORKSPACE=$$(terraform workspace show | tr -d '[:space:]') && \
+	if [ ! -z $(WORKSPACE) ] && [ "$(WORKSPACE)" != "$${_CURRENT_WORKSPACE}" ]; then \
+	  echo "$(__BOLD)Temporarily switching to 'default' workspace$(__RESET)"
+		terraform workspace select default; \
+	fi
+
 	terraform init \
 		-reconfigure \
 		-input=false \
