@@ -107,6 +107,9 @@ help: ## Save our souls! 🛟
 	echo "$(__BLUE)- tflint                       $(__GREEN)https://github.com/terraform-linters/tflint?tab=readme-ov-file#installation$(__RESET)"
 	echo "$(__BLUE)- trivy                        $(__GREEN)https://github.com/aquasecurity/trivy?tab=readme-ov-file#get-trivy$(__RESET)"
 	echo ""
+	echo "$(__SITM)$(__DIM)Optional:$(__RESET)"
+	echo "$(__BLUE)$(__DIM)- nerd font (for this help)    $(__GREEN)https://www.nerdfonts.com/$(__RESET)"
+	echo ""
 
 set-env:
 	@echo "$(__BOLD)Setting environment variables...$(__RESET)"

@@ -43,7 +43,7 @@ You can, of course, just download the [raw version of Makefile](https://raw.gith
 View a description of Makefile targets with `help` via the [self-documenting makefile](https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html).
 
 ```text
-➜ make help
+➜ make
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 This Makefile contains opinionated targets that wrap terraform commands,
 providing sane defaults, initialization shortcuts for terraform environment,
@@ -93,6 +93,9 @@ Dependencies 📦
 - terraform                    https://www.terraform.io/downloads.html
 - tflint                       https://github.com/terraform-linters/tflint?tab=readme-ov-file#installation
 - trivy                        https://github.com/aquasecurity/trivy?tab=readme-ov-file#get-trivy
+
+Optional:
+- nerd font (for this help)    https://www.nerdfonts.com/
 ```
 
 > [!NOTE]
