@@ -17,8 +17,8 @@ __MAKE_DIR=$(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 # - https://www.gnu.org/software/make/manual/html_node/Flavors.html
 # - https://www.gnu.org/software/make/manual/html_node/Setting.html
 # - https://www.gnu.org/software/make/manual/html_node/Shell-Function.html
-WORKSPACE ?= $(shell terraform workspace show)
-GCP_PROJECT ?= $(shell gcloud config get project)
+WORKSPACE ?= $(shell terraform workspace show | tr -d '[:space:]')
+GCP_PROJECT ?= $(shell gcloud config get project | tr -d '[:space:]')
 GCP_PREFIX=wlcm
 QUOTA_PROJECT=$(GCP_PREFIX)-terraform-pla-23
 __BUCKET_DIR=terraform/state
@@ -111,7 +111,7 @@ help: ## Save our souls! 🛟
 	echo "$(__BLUE)$(__DIM)- nerd font (for this help)    $(__GREEN)https://www.nerdfonts.com/$(__RESET)"
 	echo ""
 
-set-env:
+_set-env:
 	@echo "$(__BOLD)Setting environment variables...$(__RESET)"
 	if [ -z $(WORKSPACE) ]; then \
 		echo "$(__BOLD)$(__RED)WORKSPACE was not set$(__RESET)"; \
@@ -129,7 +129,16 @@ set-env:
 	echo "$(__BOLD)$(__GREEN)Done setting environment variables$(__RESET)"
 	echo ""
 
-init: set-env ## Hoist the sails and prepare for the voyage! 🌬️💨
+_check-ws: _set-env
+	@if [ "$(WORKSPACE)" = "default" ]; then \
+		read -p "$(__BOLD)$(__MAGENTA)It is usually not desirable to use ($(WORKSPACE)) workspace. Do you want to proceed? [y/Y]: $(__RESET)" ANSWER && \
+		if [ "$${ANSWER}" != "y" ] && [ "$${ANSWER}" != "Y" ]; then \
+			echo "$(__BOLD)$(__YELLOW)Exiting...$(__RESET)"; \
+			exit 0; \
+		fi; \
+	fi
+
+init: _check-ws ## Hoist the sails and prepare for the voyage! 🌬️💨
 	@echo "$(__BOLD)Initializing terraform...$(__RESET)"
 	echo "$(__BOLD)Checking GCP project...$(__RESET)"
 	_CURRENT_PROJECT=$$(gcloud config get project | tr -d '[:space:]'); \
@@ -168,7 +177,7 @@ init: set-env ## Hoist the sails and prepare for the voyage! 🌬️💨
 		_BUCKET_SUBDIR=$(__PROD_BUCKET_SUBDIR); \
 	fi; \
 	_BUCKET_PATH="$(__BUCKET_DIR)/$${_BUCKET_SUBDIR}"
-	echo "$(__BOLD)Using bucket ($${_BUCKET_NAME}) with path ($${_BUCKET_PATH})$(__RESET)"
+	echo "$(__BOLD)Using bucket ($(__DIM)$${_BUCKET_NAME}$(__RESET)) $(__BOLD)with path ($(__DIM)$${_BUCKET_PATH}$(__RESET)$(__BOLD))$(__RESET)"
 	read -p "$(__BOLD)$(__MAGENTA)Do you want to proceed? [y/Y]: $(__RESET)" ANSWER && \
 	if [ "$${ANSWER}" != "y" ] && [ "$${ANSWER}" != "Y" ]; then \
 		echo "$(__BOLD)$(__YELLOW)Exiting...$(__RESET)"; \
@@ -211,7 +220,7 @@ format: ## Swab the deck and tidy up! 🧹
 
 # https://github.com/terraform-linters/tflint
 # https://aquasecurity.github.io/trivy
-validate: ## Inspect the rigging and report any issues! 🔍
+validate: _set-env ## Inspect the rigging and report any issues! 🔍
 	@echo "$(__BOLD)Validate terraform configuration...$(__RESET)"
 	terraform validate
 	echo "$(__BOLD)Lint terraform files...$(__RESET)"
@@ -223,35 +232,35 @@ validate: ## Inspect the rigging and report any issues! 🔍
 	trivy conf --exit-code 42 --tf-vars "$(__TFVARS_PATH)" .
 	echo ""
 
-plan: set-env ## Chart the course before you sail! 🗺️
+plan: _check-ws ## Chart the course before you sail! 🗺️
 	@terraform plan \
 		-lock=true \
 		-input=false \
 		-refresh=true \
 		-var-file="$(__TFVARS_PATH)"
 
-plan-destroy: set-env ## What would happen if we blow it all to smithereens? 💣
+plan-destroy: _check-ws ## What would happen if we blow it all to smithereens? 💣
 	@terraform plan \
 		-input=false \
 		-refresh=true \
 		-destroy \
 		-var-file="$(__TFVARS_PATH)"
 
-apply: set-env validate ## Set course and full speed ahead! ⛵ This will cost you! 💰
+apply: validate _check-ws ## Set course and full speed ahead! ⛵ This will cost you! 💰
 	@terraform apply \
 		-lock=true \
 		-input=false \
 		-refresh=true \
 		-var-file="$(__TFVARS_PATH)"
 
-destroy: set-env validate ## Release the Kraken! 🐙 This can't be undone! ☠️
+destroy: validate _check-ws ## Release the Kraken! 🐙 This can't be undone! ☠️
 	@terraform destroy \
 		-lock=true \
 		-input=false \
 		-refresh=true \
 		-var-file="$(__TFVARS_PATH)"
 
-clean: set-env ## Nuke local .terraform directory! 💥
+clean: _check-ws ## Nuke local .terraform directory! 💥
 	echo "$(__BOLD)Cleaning up...$(__RESET)"
 	_DIR="$(CURDIR)/.terraform" ; \
 	read -p "$(__BOLD)$(__MAGENTA)Do you want to remove ($${_DIR})? [y/Y]: $(__RESET)" ANSWER && \
