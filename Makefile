@@ -24,7 +24,6 @@ QUOTA_PROJECT=$(GCP_PREFIX)-terraform-pla-23
 __BUCKET_DIR=terraform/state
 __PROD_BUCKET_SUBDIR=prod
 __TEST_BUCKET_SUBDIR=test
-__FIRESTORE_TABLE=$(GCP_PREFIX)-$(WORKSPACE)-terraform
 __TFVARS_PATH=vars/$(WORKSPACE).tfvars
 # Change output
 # https://www.mankier.com/5/terminfo#Description-Highlighting,_Underlining,_and_Visible_Bells

@@ -99,7 +99,13 @@ Optional:
 ```
 
 > [!NOTE]
-> Before each target, several private Makefile functions run to configure the remote state backend: `validate`,`set-env`, and `init`. You should never have to run these yourself.
+> Before each target, several private Makefile functions run to configure the remote state backend: `_set-env`, `_check-ws`, ... 
+> You should never have to run these yourself.
+
+### State Lock
+
+The GCS backend implements it's own locking mechanism by creating a `.lock` file in the same bucket for each workspace.
+See more in the [State Locking](https://developer.hashicorp.com/terraform/language/state/locking) docs.
 
 ### Considerations
 
