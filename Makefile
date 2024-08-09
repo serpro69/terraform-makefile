@@ -233,7 +233,7 @@ validate: _set-env ## Inspect the rigging and report any issues! 🔍
 	trivy conf --exit-code 42 --tf-vars "$(__TFVARS_PATH)" .
 	echo ""
 
-test: validate _check-ws ## Test the changes
+test: validate _check-ws ## Run some drills before we plunder! ⚔️  🏹
 	@if _GIT_STATUS=$$(git status --porcelain --untracked-files=no) && [ -n "$${_GIT_STATUS}" ]; then \
 		echo "$(__BOLD)$(__RED)Working directory has uncommitted changes. Commit or stash your changes before proceeding!$(__RESET)"; \
 		exit 1; \
