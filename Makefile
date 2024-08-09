@@ -9,7 +9,7 @@
 .ONESHELL:
 .SHELL := /usr/bin/env bash
 .SHELLFLAGS := -ec
-.PHONY: apply destroy format help init lint plan-destroy plan
+.PHONY: apply destroy format help init lint plan-destroy plan test
 # https://stackoverflow.com/a/63771055
 __MAKE_DIR=$(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 # Use below for reference on how to use variables in a Makefile:
@@ -26,6 +26,7 @@ __BUCKET_DIR=terraform/state
 __PROD_BUCKET_SUBDIR=prod
 __TEST_BUCKET_SUBDIR=test
 __TFVARS_PATH=vars/$(WORKSPACE).tfvars
+__GIT_DEFAULT_BRANCH=main
 # Change output
 # https://www.mankier.com/5/terminfo#Description-Highlighting,_Underlining,_and_Visible_Bells
 # https://www.linuxquestions.org/questions/linux-newbie-8/tput-for-bold-dim-italic-underline-blinking-reverse-invisible-4175704737/#post6308097
@@ -147,7 +148,7 @@ init: _check-ws ## Hoist the sails and prepare for the voyage! 🌬️💨
 		if [ "$${ANSWER}" = "y" ] || [ "$${ANSWER}" = "Y" ]; then \
 			gcloud config set project $(GCP_PROJECT) && \
 			gcloud auth login --update-adc ; \
-	  	echo "$(__BOLD)$(__GREEN)Project changed to $(GCP_PROJECT)$(__RESET)"; \
+			echo "$(__BOLD)$(__GREEN)Project changed to $(GCP_PROJECT)$(__RESET)"; \
 		else
 			echo "$(__BOLD)$(__CYAN)Using project ($${_CURRENT_PROJECT})$(__RESET)"; \
 		fi; \
@@ -188,7 +189,7 @@ init: _check-ws ## Hoist the sails and prepare for the voyage! 🌬️💨
 	# (when changing between prod and non-prod state bucket sub-dirs)
 	_CURRENT_WORKSPACE=$$(terraform workspace show | tr -d '[:space:]') && \
 	if [ ! -z $(WORKSPACE) ] && [ "$(WORKSPACE)" != "$${_CURRENT_WORKSPACE}" ]; then \
-	  echo "$(__BOLD)Temporarily switching to 'default' workspace$(__RESET)"
+		echo "$(__BOLD)Temporarily switching to 'default' workspace$(__RESET)"
 		terraform workspace select default; \
 	fi
 
@@ -205,7 +206,7 @@ init: _check-ws ## Hoist the sails and prepare for the voyage! 🌬️💨
 	echo "$(__BOLD)Checking terraform workspace...$(__RESET)"
 	_CURRENT_WORKSPACE=$$(terraform workspace show | tr -d '[:space:]'); \
 	if [ ! -z $(WORKSPACE) ] && [ "$(WORKSPACE)" != "$${_CURRENT_WORKSPACE}" ]; then \
-	  echo "$(__BOLD)Switching to workspace ($(WORKSPACE))$(__RESET)"
+		echo "$(__BOLD)Switching to workspace ($(WORKSPACE))$(__RESET)"
 		terraform workspace select -or-create $(WORKSPACE); \
 	else
 		echo "$(__BOLD)$(__CYAN)Using workspace ($${_CURRENT_WORKSPACE})$(__RESET)"; \
@@ -231,6 +232,44 @@ validate: _set-env ## Inspect the rigging and report any issues! 🔍
 	echo "$(__BOLD)\nScan for vulnerabilities...$(__RESET)"
 	trivy conf --exit-code 42 --tf-vars "$(__TFVARS_PATH)" .
 	echo ""
+
+test: validate _check-ws ## Test the changes
+	@if _GIT_STATUS=$$(git status --porcelain --untracked-files=no) && [ -n "$${_GIT_STATUS}" ]; then \
+		echo "$(__BOLD)$(__RED)Working directory has uncommitted changes. Commit or stash your changes before proceeding!$(__RESET)"; \
+		exit 1; \
+	fi; \
+	_GIT_CURRENT_BRANCH=$$(git rev-parse --abbrev-ref HEAD | tr -d '[:space:]'); \
+	if [ "$${_GIT_CURRENT_BRANCH}" = "$(__GIT_DEFAULT_BRANCH)" ]; then \
+		echo "$(__BOLD)$(__RED)Unable to proceed in a default git branch. Switch to another branch before proceeding$(__RESET)"; \
+		exit 1; \
+	fi; \
+	_INITIAL_WORKSPACE=$$(terraform workspace show | tr -d '[:space:]'); \
+	_TEMP_WORKSPACE="test-$$(uuidgen | cut -d '-' -f 1)"; \
+	# use latest changes in default, upstream branch as baseline
+	git pull origin $(__GIT_DEFAULT_BRANCH) && git checkout origin/$(__GIT_DEFAULT_BRANCH); \
+	# ensure vars and inputs are available for testing
+	cp vars/$${_INITIAL_WORKSPACE}.tfvars vars/$${_TEMP_WORKSPACE}.tfvars; \
+	cp -r inputs/$${_INITIAL_WORKSPACE} inputs/$${_TEMP_WORKSPACE}; \
+	# init and apply against baseline
+	make init WORKSPACE="$${_TEMP_WORKSPACE}"; \
+	make apply; \
+	# switch back to initial branch
+	git switch -; \
+	# re-initialize terraform to pull latest modules, providers, etc
+	make init; \
+	# TODO: run plan with -out option
+	# apply to test the new changeset
+	make apply; \
+	echo "$(__BOLD)$(__GREEN)All tests passed"; \
+	read -p "$(__BOLD)$(__MAGENTA)Would you like to destroy the test infrastructure? [y/Y]: $(__RESET)" ANSWER && \
+	if [ "$${ANSWER}" = "y" ] || [ "$${ANSWER}" = "Y" ]; then \
+		make destroy; \
+	fi; \
+	read -p "$(__BOLD)$(__MAGENTA)Switch back to ($${_INITIAL_WORKSPACE}) workspace and delete ($${_TEMP_WORKSPACE}) workspace? [y/Y]: $(__RESET)" ANSWER && \
+	if [ "$${ANSWER}" = "y" ] || [ "$${ANSWER}" = "Y" ]; then \
+		terraform workspace select "$${_INITIAL_WORKSPACE}"; \
+		terraform workspace delete --force "${{_TEMP_WORKSPACE}}"; \
+	fi
 
 plan: _check-ws ## Chart the course before you sail! 🗺️
 	@terraform plan \
@@ -265,6 +304,6 @@ clean: _check-ws ## Nuke local .terraform directory! 💥
 	_DIR="$(CURDIR)/.terraform" ; \
 	read -p "$(__BOLD)$(__MAGENTA)Do you want to remove ($${_DIR})? [y/Y]: $(__RESET)" ANSWER && \
 	if [ "$${ANSWER}" = "y" ] || [ "$${ANSWER}" = "Y" ]; then \
-	  rm -rf "$${_DIR}" ; \
+		rm -rf "$${_DIR}"; \
 		echo "$(__BOLD)$(__CYAN)Removed ($${_DIR})$(__RESET)"; \
 	fi
