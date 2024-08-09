@@ -22,6 +22,7 @@ GCP_PROJECT ?= $(shell gcloud config get project | tr -d '[:space:]')
 GCP_PREFIX=wlcm
 GCP_POSTFIX=ffcb87
 QUOTA_PROJECT=$(GCP_PREFIX)-tfstate-$(GCP_POSTFIX)
+__ENVIRONMENT ?=
 __BUCKET_DIR=terraform/state
 __PROD_BUCKET_SUBDIR=prod
 __TEST_BUCKET_SUBDIR=test
@@ -36,7 +37,7 @@ __BOLD=$(shell tput bold)
 __DIM=$(shell tput dim)
 __SITM=$(shell tput sitm)
 __REV=$(shell tput rev)
-_SMSO=$(shell tput smso)
+__SMSO=$(shell tput smso)
 __SMUL=$(shell tput smul)
 # https://www.mankier.com/5/terminfo#Description-Color_Handling
 __BLACK=$(shell tput setaf 0)
@@ -121,7 +122,7 @@ _set-env:
 	if [ ! -f "$(__TFVARS_PATH)" ]; then \
 		echo "$(__BOLD)$(__RED)Could not find variables file: $(__TFVARS_PATH)$(__RESET)"; \
 		_ERROR=1; \
-	 fi; \
+	fi; \
 	if [ ! -z "$${_ERROR}" ] && [ "$${_ERROR}" -eq 1 ]; then \
 		# https://stackoverflow.com/a/3267187
 		echo "$(__BOLD)$(__RED)Failed to set environment variables\nRun $(__DIM)$(__BLINK)make help$(__RESET) $(__BOLD)$(__RED)for usage details$(__RESET)"
@@ -173,6 +174,7 @@ init: _check-ws ## Hoist the sails and prepare for the voyage! 🌬️💨
 	echo "$(__BOLD)Configuring the terraform backend...$(__RESET)"
 	_BUCKET_NAME=$$(gcloud storage buckets list --project $(QUOTA_PROJECT) --format='get(name)' | grep 'tfstate' | head -n1 | tr -d '[:space:]'); \
 	_BUCKET_SUBDIR=$(__TEST_BUCKET_SUBDIR); \
+	[ ! "$(__ENVIRONMENT)" = "test" ] && \
 	read -p "$(__BOLD)$(__MAGENTA)Use $(__BLINK)$(__YELLOW)production$(__RESET) $(__BOLD)$(__MAGENTA)state bucket subdir? [y/Y]: $(__RESET)" ANSWER && \
 	if [ "$${ANSWER}" = "y" ] || [ "$${ANSWER}" = "Y" ]; then \
 		_BUCKET_SUBDIR=$(__PROD_BUCKET_SUBDIR); \
@@ -251,16 +253,16 @@ test: validate _check-ws ## Run some drills before we plunder! ⚔️  🏹
 	cp vars/$${_INITIAL_WORKSPACE}.tfvars vars/$${_TEMP_WORKSPACE}.tfvars; \
 	cp -r inputs/$${_INITIAL_WORKSPACE} inputs/$${_TEMP_WORKSPACE}; \
 	# init and apply against baseline
-	make init WORKSPACE="$${_TEMP_WORKSPACE}"; \
+	make init __ENVIRONMENT="test" WORKSPACE="$${_TEMP_WORKSPACE}"; \
 	make apply; \
 	# switch back to initial branch
 	git switch -; \
 	# re-initialize terraform to pull latest modules, providers, etc
-	make init; \
+	make init __ENVIRONMENT="test"; \
 	# TODO: run plan with -out option
 	# apply to test the new changeset
 	make apply; \
-	echo "$(__BOLD)$(__GREEN)All tests passed"; \
+	echo "$(__BOLD)$(__GREEN)$(__BLINK)All tests passed!$(__RESET)"; \
 	read -p "$(__BOLD)$(__MAGENTA)Would you like to destroy the test infrastructure? [y/Y]: $(__RESET)" ANSWER && \
 	if [ "$${ANSWER}" = "y" ] || [ "$${ANSWER}" = "Y" ]; then \
 		make destroy; \
@@ -268,7 +270,7 @@ test: validate _check-ws ## Run some drills before we plunder! ⚔️  🏹
 	read -p "$(__BOLD)$(__MAGENTA)Switch back to ($${_INITIAL_WORKSPACE}) workspace and delete ($${_TEMP_WORKSPACE}) workspace? [y/Y]: $(__RESET)" ANSWER && \
 	if [ "$${ANSWER}" = "y" ] || [ "$${ANSWER}" = "Y" ]; then \
 		terraform workspace select "$${_INITIAL_WORKSPACE}"; \
-		terraform workspace delete --force "${{_TEMP_WORKSPACE}}"; \
+		terraform workspace delete --force "${_TEMP_WORKSPACE}"; \
 	fi
 
 plan: _check-ws ## Chart the course before you sail! 🗺️
