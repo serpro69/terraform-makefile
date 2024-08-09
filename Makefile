@@ -9,7 +9,7 @@
 .ONESHELL:
 .SHELL := /usr/bin/env bash
 .SHELLFLAGS := -ec
-.PHONY: apply destroy format help init lint plan-destroy plan test
+.PHONY: apply clean destroy format help init plan plan-destroy test validate
 # https://stackoverflow.com/a/63771055
 __MAKE_DIR=$(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 # Use below for reference on how to use variables in a Makefile:
